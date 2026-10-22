@@ -1,0 +1,251 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // Hardened Global Primitives
+    // ---------------------------------------------------------
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // ---------------------------------------------------------
+    // Validation Blueprints (Anti-Update-Gap)
+    // ---------------------------------------------------------
+    function isValidUserWatchlist(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'subjectId',
+          'subjectLabel',
+          'lastCameraId',
+          'lastCameraName',
+          'predictedCameraId',
+          'predictedCameraName',
+          'predictedBearingDeg',
+          'predictedSpeedMph',
+          'confidence',
+          'notes',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'subjectId',
+          'subjectLabel',
+          'lastCameraId',
+          'lastCameraName',
+          'predictedCameraId',
+          'predictedCameraName',
+          'predictedBearingDeg',
+          'predictedSpeedMph',
+          'confidence',
+          'notes',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.subjectId is string
+        && data.subjectId.size() >= 1
+        && data.subjectId.size() <= 100
+        && data.subjectLabel is string
+        && data.subjectLabel.size() >= 1
+        && data.subjectLabel.size() <= 160
+        && data.lastCameraId is number
+        && data.lastCameraName is string
+        && data.lastCameraName.size() >= 1
+        && data.lastCameraName.size() <= 160
+        && data.predictedCameraId is number
+        && data.predictedCameraName is string
+        && data.predictedCameraName.size() >= 1
+        && data.predictedCameraName.size() <= 160
+        && data.predictedBearingDeg is number
+        && data.predictedBearingDeg >= 0
+        && data.predictedBearingDeg <= 360
+        && data.predictedSpeedMph is number
+        && data.predictedSpeedMph >= 0
+        && data.predictedSpeedMph <= 200
+        && data.confidence is number
+        && data.confidence >= 0
+        && data.confidence <= 100
+        && data.notes is string
+        && data.notes.size() <= 500
+        && data.status is string
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserIncidentLog(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'cameraId',
+          'cameraName',
+          'corridor',
+          'lat',
+          'lng',
+          'incidentType',
+          'severity',
+          'description',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'cameraId',
+          'cameraName',
+          'corridor',
+          'lat',
+          'lng',
+          'incidentType',
+          'severity',
+          'description',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.cameraId is number
+        && data.cameraName is string
+        && data.cameraName.size() >= 1
+        && data.cameraName.size() <= 160
+        && data.corridor is string
+        && data.corridor.size() >= 1
+        && data.corridor.size() <= 120
+        && data.lat is number
+        && data.lat >= -90
+        && data.lat <= 90
+        && data.lng is number
+        && data.lng >= -180
+        && data.lng <= 180
+        && data.incidentType is string
+        && data.incidentType in ['collision', 'congestion', 'hazard', 'police_activity', 'pedestrian_density']
+        && data.severity is string
+        && data.severity in ['low', 'moderate', 'high', 'critical']
+        && data.description is string
+        && data.description.size() >= 1
+        && data.description.size() <= 500
+        && data.status is string
+        && data.status in ['active', 'resolved']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // ---------------------------------------------------------
+    // Collection: /userWatchlists/{watchlistId}
+    // ---------------------------------------------------------
+    match /userWatchlists/{watchlistId} {
+      allow get: if isSignedIn() && isValidId(watchlistId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(watchlistId)
+        && isValidUserWatchlist(incoming())
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(watchlistId)
+        && isValidUserWatchlist(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().status != 'archived'
+        && (
+          // Action 1: Update notes or prediction telemetry
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'lastCameraId',
+            'lastCameraName',
+            'predictedCameraId',
+            'predictedCameraName',
+            'predictedBearingDeg',
+            'predictedSpeedMph',
+            'confidence',
+            'notes',
+            'updatedAt'
+          ])
+          ||
+          // Action 2: Archive watchlist item (Terminal State Transition)
+          (
+            incoming().status == 'archived'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser()
+        && isValidId(watchlistId)
+        && existing().ownerId == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------
+    // Collection: /userIncidentLogs/{logId}
+    // ---------------------------------------------------------
+    match /userIncidentLogs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(logId)
+        && isValidUserIncidentLog(incoming())
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(logId)
+        && isValidUserIncidentLog(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().status != 'resolved'
+        && (
+          // Action 1: Update severity or description
+          incoming().diff(existing()).affectedKeys().hasOnly(['severity', 'description', 'updatedAt'])
+          ||
+          // Action 2: Mark incident log resolved (Terminal State Transition)
+          (
+            incoming().status == 'resolved'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser()
+        && isValidId(logId)
+        && existing().ownerId == request.auth.uid;
+    }
+  }
+}

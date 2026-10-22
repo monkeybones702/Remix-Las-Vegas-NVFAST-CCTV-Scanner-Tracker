@@ -1,0 +1,8 @@
+{
+  "name": "Remix Las Vegas NVFAST CCTV Scanner \u0026 Tracker",
+  "description": "Live CCTV monitoring, PTZ movement scanner detecting live operator manual slewing vs programmed patrol tours, AI visual attribute search, and community response posting system across Las Vegas traffic cameras.include videos from all sources. And live cctv plus YouTube feeds",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

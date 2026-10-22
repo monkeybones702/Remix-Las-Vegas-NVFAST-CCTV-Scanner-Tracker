@@ -1,0 +1,365 @@
+{
+  "entities": {
+    "UserWatchlist": {
+      "title": "UserWatchlist",
+      "description": "A user-saved trajectory tracking bookmark and prediction snapshot stored in Firestore.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the user who owns this watchlist item.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "Identifier of the tracked subject.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "subjectLabel": {
+          "type": "string",
+          "description": "Display label of the tracked subject.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "lastCameraId": {
+          "type": "number",
+          "description": "ID of the last confirmed CCTV camera sighting."
+        },
+        "lastCameraName": {
+          "type": "string",
+          "description": "Name of the last confirmed CCTV camera.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "predictedCameraId": {
+          "type": "number",
+          "description": "ID of the primary predicted next CCTV camera."
+        },
+        "predictedCameraName": {
+          "type": "string",
+          "description": "Name of the primary predicted next CCTV camera.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "predictedBearingDeg": {
+          "type": "number",
+          "description": "Projected compass bearing in degrees (0-360)."
+        },
+        "predictedSpeedMph": {
+          "type": "number",
+          "description": "Estimated speed in miles per hour."
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Prediction confidence percentage (0-100)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Operator notes on the predicted trajectory.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "description": "Watchlist tracking status.",
+          "enum": ["active", "archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "subjectId",
+        "subjectLabel",
+        "lastCameraId",
+        "lastCameraName",
+        "predictedCameraId",
+        "predictedCameraName",
+        "predictedBearingDeg",
+        "predictedSpeedMph",
+        "confidence",
+        "notes",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserIncidentLog": {
+      "title": "UserIncidentLog",
+      "description": "A user-reported corridor incident or heatmap density observation persisted in Firestore.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the reporting user.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "cameraId": {
+          "type": "number",
+          "description": "Associated NV FAST CCTV camera ID."
+        },
+        "cameraName": {
+          "type": "string",
+          "description": "Name of the associated CCTV camera.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "corridor": {
+          "type": "string",
+          "description": "Corridor name where the incident occurred.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "lat": {
+          "type": "number",
+          "description": "Latitude coordinate."
+        },
+        "lng": {
+          "type": "number",
+          "description": "Longitude coordinate."
+        },
+        "incidentType": {
+          "type": "string",
+          "description": "Classification of the incident.",
+          "enum": ["collision", "congestion", "hazard", "police_activity", "pedestrian_density"]
+        },
+        "severity": {
+          "type": "string",
+          "description": "Severity weight for heatmap aggregation.",
+          "enum": ["low", "moderate", "high", "critical"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Summary description of the observed incident.",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the logged incident.",
+          "enum": ["active", "resolved"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "cameraId",
+        "cameraName",
+        "corridor",
+        "lat",
+        "lng",
+        "incidentType",
+        "severity",
+        "description",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPatrolPlan": {
+      "title": "UserPatrolPlan",
+      "description": "An AI-optimized PTZ autonomous patrol path saved by the operator in Firestore.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the operator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "corridor": {
+          "type": "string",
+          "description": "Target corridor for the autonomous patrol.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "mode": {
+          "type": "string",
+          "description": "PTZ operating mode.",
+          "enum": ["manual_oversight", "autonomous_patrol"]
+        },
+        "planTitle": {
+          "type": "string",
+          "description": "Title of the patrol optimization plan.",
+          "minLength": 1,
+          "maxLength": 180
+        },
+        "cameraSequenceSummary": {
+          "type": "string",
+          "description": "Readable camera waypoint sequence and dwell summary.",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "estimatedCoverageGainPct": {
+          "type": "number",
+          "description": "Estimated FOV coverage improvement percentage (0-100)."
+        },
+        "responseLatencyReductionSec": {
+          "type": "number",
+          "description": "Estimated reduction in incident lock latency in seconds."
+        },
+        "rationale": {
+          "type": "string",
+          "description": "AI and Search Grounded rationale for the patrol optimization.",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the patrol plan.",
+          "enum": ["active", "archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "corridor",
+        "mode",
+        "planTitle",
+        "cameraSequenceSummary",
+        "estimatedCoverageGainPct",
+        "responseLatencyReductionSec",
+        "rationale",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserFovAlert": {
+      "title": "UserFovAlert",
+      "description": "A notification logged when a tracked vehicle enters the field of view of a high-traffic camera.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the operator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "Tracked vehicle identifier.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "subjectLabel": {
+          "type": "string",
+          "description": "Tracked vehicle display label.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "cameraId": {
+          "type": "number",
+          "description": "High-traffic CCTV camera ID entered."
+        },
+        "cameraName": {
+          "type": "string",
+          "description": "Name of the high-traffic CCTV camera.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "corridor": {
+          "type": "string",
+          "description": "Corridor of the high-traffic camera.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "trafficVolumeAadt": {
+          "type": "number",
+          "description": "Average Annual Daily Traffic (AADT) volume at this node."
+        },
+        "fovHeadingDeg": {
+          "type": "number",
+          "description": "Camera field-of-view azimuth in degrees (0-360)."
+        },
+        "status": {
+          "type": "string",
+          "description": "Alert acknowledgement status.",
+          "enum": ["unread", "acknowledged"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "subjectId",
+        "subjectLabel",
+        "cameraId",
+        "cameraName",
+        "corridor",
+        "trafficVolumeAadt",
+        "fovHeadingDeg",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/userWatchlists/{watchlistId}": {
+      "schema": {
+        "$ref": "#/entities/UserWatchlist"
+      },
+      "description": "Stores per-user saved trajectory predictions and target watchlists."
+    },
+    "/userIncidentLogs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/UserIncidentLog"
+      },
+      "description": "Stores per-user logged corridor incidents contributing to the CCTV heatmap."
+    },
+    "/userPatrolPlans/{planId}": {
+      "schema": {
+        "$ref": "#/entities/UserPatrolPlan"
+      },
+      "description": "Stores per-user saved AI autonomous PTZ patrol path optimization plans."
+    },
+    "/userFovAlerts/{alertId}": {
+      "schema": {
+        "$ref": "#/entities/UserFovAlert"
+      },
+      "description": "Stores per-user high-traffic camera FOV entry alerts for tracked vehicles."
+    }
+  }
+}
